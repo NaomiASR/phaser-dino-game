@@ -11,7 +11,7 @@ const config = {
   parent: 'game-container',
   scale: {
     mode: Scale.FIT,
-    autoCenter: Scale.CENTER_BOTH
+    autoCenter: Scale.CENTER_HORIZONTALLY
   },
   scene: [
     MainGame
