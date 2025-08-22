@@ -21,6 +21,9 @@ export class Game extends Scene {
         this.load.image("ground","assets/ground.png") 
         this.load.image("cloud","assets/cloud.png")
 
+        this.load.image('game-over','assets/game-over.png');
+        this.load.image('restart','assets/restart.png');
+
         for(let i = 0; i<6;i++) {
             const catcusNum = i + 1;
             this.load.image(`obstacle-${catcusNum}`,`assets/cactuses_${catcusNum}.png`);
@@ -29,7 +32,8 @@ export class Game extends Scene {
 
     create() {
         //setOrigin centers the sprite image
-        this.player = this.physics.add.sprite(200,200,"dino").setOrigin(0,1)
+        this.isGameRunning = true;
+        this.player = this.physics.add.sprite(200,200,"dino").setDepth(1).setOrigin(0,1)
         .setGravityY(5000).setCollideWorldBounds(true).setBodySize(44,92);
 
         this.ground = this.add.tileSprite(0,350,1000,30,"ground").setOrigin(0,1);
@@ -52,9 +56,28 @@ export class Game extends Scene {
             allowGravity: false
         })
         this.timer = 0;
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.physics.add.collider(this.obstacles,this.player, this.gameOver,null,this);
+
+        this.gameOverText = this.add.image(0,0,'game-over');
+        this.restartText = this.add.image(0,80,'restart').setInteractive();
+
+        //container groups the above two in together
+        this.gameOverContainer = this.add.container(400,(300/2)-50)
+        .add([this.gameOverText,this.restartText]).setAlpha(0);
+
+        this.scoreText = this.add.text(100,20,'00000',{
+            fontSize: 30,
+            fontFamily: 'Arial',
+            color: '#535353',
+            resolution: 5,
+        }).setOrigin(1,0);
+        this.score = 0;
+        this.frameCounter = 0;
     }
 
     update(time, delta) {
+        if(!this.isGameRunning) {return;}
         this.ground.tilePositionX += this.gameSpeed;
         this.timer += delta;
         console.log(this.timer);
@@ -71,6 +94,25 @@ export class Game extends Scene {
                 obstacle.destroy();
             }
         })
+        const{space,up} = this.cursors;
+        if((Phaser.Input.Keyboard.JustDown(space) || Phaser.Input.Keyboard.JustDown(up)) && this.player.body.onFloor()) {
+            this.player.setVelocityY(-1600);
+        }
+        this.restartText.on('pointerdown',()=> {
+            this.physics.resume();
+            this.player.setVelocityY(0);
+            this.obstacles.clear(true,true);
+            this.gameOverContainer.setAlpha(0);
+            this.isGameRunning = true;
+        }
+        )
+    }
+    
+    gameOver() {
+        this.physics.pause();
+        this.timer = 0;
+        this.isGameRunning = false;
+        this.gameOverContainer.setAlpha(1);
     }
 
 }
