@@ -69,7 +69,8 @@ export class Game extends Scene {
         this.gameOverContainer = this.add.container(400,(300/2)-50)
         .add([this.gameOverText,this.restartText]).setAlpha(0);
 
-        this.scoreText = this.add.text(100,20,'00000',{
+        // Score / High Score / Lives - moved to top-right
+        this.scoreText = this.add.text(800, 30,'00000',{
             fontSize: 30,
             fontFamily: 'Arial',
             color: '#535353',
@@ -79,13 +80,23 @@ export class Game extends Scene {
         this.frameCounter = 0;
         
         this.highScore = 0;
-        //display high score
-        this.highScoreText = this.add.text(800, 40, "High: 00000", {
-            fontSize: 30,
+        //display high score (below score)
+        this.highScoreText = this.add.text(700, 0, "High: 00000", {
+            fontSize: 26,
             fontFamily: "Arial",
             color: "#535353",
             resolution: 5
         }).setOrigin(1, 0).setAlpha(1);
+
+        // Lives (below high score)
+        this.lives = 3;
+        this.livesText = this.add.text(800, 0, `Lives: ${this.lives}`, {
+            fontSize: 26,
+            fontFamily: "Arial",
+            color: "#535353",
+            resolution: 5
+        }).setOrigin(1, 0);
+
         this.anims.create({
         key: "dino-run",
         frames: this.anims.generateFrameNames("dino", {start: 2, end: 3}),
@@ -126,6 +137,9 @@ export class Game extends Scene {
             this.isGameRunning = true;
             this.frameCounter = 0;
             this.score = 0;
+            this.lives = 3;
+            this.livesText.setText(`Lives: ${this.lives}`);
+            this.player.setVisible(true);
             const formattedScore = String(Math.floor(this.score)).padStart(5, "0");
             this.scoreText.setText(formattedScore);
             this.anims.resumeAll();
@@ -152,6 +166,55 @@ export class Game extends Scene {
     }
 
     gameOver() {
+        // decrement lives on collision
+        this.lives -= 1;
+        // update lives display
+        this.livesText.setText(`Lives: ${this.lives}`);
+        this.sound.play("hit");
+
+        // set hurt texture and ensure visible
+        this.player.setTexture("dino-hurt");
+        this.player.setVisible(true);
+
+        // if still have lives left, give a short pause then resume play with flicker effect
+        if (this.lives > 0) {
+            this.physics.pause();
+            this.timer = 0;
+            this.isGameRunning = false;
+
+            // flicker the dino sprite while paused to indicate hit (keep dino-hurt texture)
+            // repeat:3 => 4 callbacks -> visible toggles 4 times -> two full flickers (off/on, off/on)
+            const flicker = this.time.addEvent({
+                delay: 120,
+                callback: () => {
+                    this.player.visible = !this.player.visible;
+                },
+                repeat: 3
+            });
+
+            // short delay to show hit/flicker state, then reset obstacles and resume
+            this.time.delayedCall(1000, () => {
+                // stop flicker and ensure dino is visible and still using hurt texture
+                if (flicker && !flicker.hasDispatched) {
+                    flicker.remove(false);
+                }
+                this.player.setVisible(true);
+                this.player.setTexture("dino-hurt");
+
+                this.physics.resume();
+                this.obstacles.clear(true,true);
+                this.player.setVelocityY(0);
+
+                // restore running animation/texture after resume
+                this.player.setTexture("dino");
+                this.anims.resumeAll();
+                this.isGameRunning = true;
+            }, [], this);
+
+            return;
+        }
+
+        // no lives left -> full game over
         //check to see if high score
         if (this.score > this.highScore) {
 
@@ -165,9 +228,9 @@ export class Game extends Scene {
         this.timer = 0;
         this.isGameRunning = false;
         this.gameOverContainer.setAlpha(1);
-        this.sound.play("hit");
         this.anims.pauseAll();
         this.player.setTexture("dino-hurt");
+        this.player.setVisible(true);
     }
 
 }
