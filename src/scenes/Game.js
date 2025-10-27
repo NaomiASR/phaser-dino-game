@@ -17,20 +17,20 @@ export class Game extends Scene {
 
     preload() {
         //load and assign spritesheet to 'dino', load and assign images to 'cloud' and 'ground'
-        this.load.spritesheet("dino", "assets/dino-run.png", {frameWidth:88, frameHeight:94});
-        this.load.image("ground","assets/ground.png") 
-        this.load.image("cloud","assets/cloud.png")
-
-        this.load.image('game-over','assets/game-over.png');
-        this.load.image('restart','assets/restart.png');
+        this.load.spritesheet("dino", "public/assets/dino-run.png", {frameWidth:88, frameHeight:94});
+        this.load.image("ground","public/assets/ground.png") 
+        this.load.image("cloud","public/assets/cloud.png")
+        this.load.image("dino-hurt", "public/assets/dino-hurt.png");
+        this.load.image("game-over","public/assets/game-over.png");
+        this.load.image("restart","public/assets/restart.png");
 
         for(let i = 0; i<6;i++) {
             const catcusNum = i + 1;
             this.load.image(`obstacle-${catcusNum}`,`assets/cactuses_${catcusNum}.png`);
         }
         //Audio
-        this.load.audio("jump","assets/jump.m4a");
-        this.load.audio("hit","assets:/hit.m4a");
+        this.load.audio("jump","public/assets/jump.m4a");
+        this.load.audio("hit","public/assets/hit.m4a");
     }
 
     create() {
@@ -62,8 +62,8 @@ export class Game extends Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.physics.add.collider(this.obstacles,this.player, this.gameOver,null,this);
 
-        this.gameOverText = this.add.image(0,0,'game-over');
-        this.restartText = this.add.image(0,80,'restart').setInteractive();
+        this.gameOverText = this.add.image(0,0,"game-over");
+        this.restartText = this.add.image(0,80,"restart").setInteractive();
 
         //container groups the above two in together
         this.gameOverContainer = this.add.container(400,(300/2)-50)
@@ -78,7 +78,20 @@ export class Game extends Scene {
         this.score = 0;
         this.frameCounter = 0;
         
-
+        this.highScore = 0;
+        //display high score
+        this.highScoreText = this.add.text(800, 40, "High: 00000", {
+            fontSize: 30,
+            fontFamily: "Arial",
+            color: "#535353",
+            resolution: 5
+        }).setOrigin(1, 0).setAlpha(1);
+        this.anims.create({
+        key: "dino-run",
+        frames: this.anims.generateFrameNames("dino", {start: 2, end: 3}),
+        frameRate: 10,
+        repeat: -1
+    });
         
     }
 
@@ -111,16 +124,50 @@ export class Game extends Scene {
             this.obstacles.clear(true,true);
             this.gameOverContainer.setAlpha(0);
             this.isGameRunning = true;
+            this.frameCounter = 0;
+            this.score = 0;
+            const formattedScore = String(Math.floor(this.score)).padStart(5, "0");
+            this.scoreText.setText(formattedScore);
+            this.anims.resumeAll();
         }
         )
+        this.frameCounter++;
+        if (this.frameCounter > 100) { 
+            this.score += 100;
+            const formattedScore = String(Math.floor(this.score)).padStart(5,   "0");
+            this.scoreText.setText(formattedScore);
+            this.frameCounter -= 100;
     }
     
+    if (this.player.body.deltaAbsY() > 4) {
+        //temporarily stop the running animation
+        this.player.anims.stop();
+        //set texture to the first frame (index 0) in the spritesheet
+        this.player.setTexture("dino", 0);
+    }
+    else {
+        //otherwise play the dino-run animation
+        this.player.play("dino-run", true);
+    }
+    }
+
     gameOver() {
+        //check to see if high score
+        if (this.score > this.highScore) {
+
+            //update high score variable
+            this.highScore = this.score;
+
+            //update high score text
+            this.highScoreText.setText("High: " + String(this.highScore).padStart(5, "0"));
+        }
         this.physics.pause();
         this.timer = 0;
         this.isGameRunning = false;
         this.gameOverContainer.setAlpha(1);
         this.sound.play("hit");
+        this.anims.pauseAll();
+        this.player.setTexture("dino-hurt");
     }
 
 }
