@@ -28,6 +28,9 @@ export class Game extends Scene {
             const catcusNum = i + 1;
             this.load.image(`obstacle-${catcusNum}`,`assets/cactuses_${catcusNum}.png`);
         }
+        //Audio
+        this.load.audio("jump","assets/jump.m4a");
+        this.load.audio("hit","assets:/hit.m4a");
     }
 
     create() {
@@ -74,6 +77,9 @@ export class Game extends Scene {
         }).setOrigin(1,0);
         this.score = 0;
         this.frameCounter = 0;
+        
+
+        
     }
 
     update(time, delta) {
@@ -97,6 +103,7 @@ export class Game extends Scene {
         const{space,up} = this.cursors;
         if((Phaser.Input.Keyboard.JustDown(space) || Phaser.Input.Keyboard.JustDown(up)) && this.player.body.onFloor()) {
             this.player.setVelocityY(-1600);
+            this.sound.play("jump");
         }
         this.restartText.on('pointerdown',()=> {
             this.physics.resume();
@@ -113,6 +120,7 @@ export class Game extends Scene {
         this.timer = 0;
         this.isGameRunning = false;
         this.gameOverContainer.setAlpha(1);
+        this.sound.play("hit");
     }
 
 }
