@@ -97,6 +97,9 @@ export class Game extends Scene {
             resolution: 5
         }).setOrigin(1, 0);
 
+        // ensure the initial color matches the current lives
+        this.updateLivesDisplay();
+
         this.anims.create({
         key: "dino-run",
         frames: this.anims.generateFrameNames("dino", {start: 2, end: 3}),
@@ -106,6 +109,17 @@ export class Game extends Scene {
         
     }
 
+    // helper to update lives text and color
+    updateLivesDisplay() {
+        if (!this.livesText) { return; }
+        this.livesText.setText(`Lives: ${this.lives}`);
+        if (this.lives === 1) {
+            this.livesText.setColor('#ff0000'); // red when 1 life left
+        } else {
+            this.livesText.setColor('#535353'); // default color otherwise
+        }
+    }
+
     update(time, delta) {
         if(!this.isGameRunning) {return;}
         this.ground.tilePositionX += this.gameSpeed;
@@ -113,7 +127,12 @@ export class Game extends Scene {
         console.log(this.timer);
         if (this.timer > 1000) {
             this.obstacleNum = Math.floor(Math.random()*6)+1;
-            this.obstacles.create(760,265,`obstacle-${this.obstacleNum}`).setOrigin(0);
+            // create obstacle, scale it slightly down, and adjust its physics body to match
+            const obs = this.obstacles.create(760, 270, `obstacle-${this.obstacleNum}`).setOrigin(0);
+            obs.setScale(0.9); // make cactus slightly narrower
+            if (obs.body) {
+                obs.body.setSize(obs.displayWidth, obs.displayHeight);
+            }
             this.timer -= 1000; 
         }
         
@@ -138,7 +157,7 @@ export class Game extends Scene {
             this.frameCounter = 0;
             this.score = 0;
             this.lives = 3;
-            this.livesText.setText(`Lives: ${this.lives}`);
+            this.updateLivesDisplay();
             this.player.setVisible(true);
             const formattedScore = String(Math.floor(this.score)).padStart(5, "0");
             this.scoreText.setText(formattedScore);
@@ -168,8 +187,8 @@ export class Game extends Scene {
     gameOver() {
         // decrement lives on collision
         this.lives -= 1;
-        // update lives display
-        this.livesText.setText(`Lives: ${this.lives}`);
+        // update lives display and color
+        this.updateLivesDisplay();
         this.sound.play("hit");
 
         // set hurt texture and ensure visible
